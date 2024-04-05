@@ -128,6 +128,10 @@ object Smithy4sCodegenPlugin extends AutoPlugin {
         ).mkString(" ")
       )
 
+    val smithy4sOpenApiConfig = taskKey[Option[File]](
+      "Custom OpenAPI config to use"
+    )
+
     val smithy4sWildcardArgument =
       taskKey[String](
         "String value to use as wildcard argument in types in generated code"
@@ -230,6 +234,7 @@ object Smithy4sCodegenPlugin extends AutoPlugin {
       (config / smithy4sInternalDependenciesAsJars).value ++
         fetch(config / smithy4sAllExternalDependencies).value
     },
+    config / smithy4sOpenApiConfig := None,
     config / smithy4sWildcardArgument := {
       // This logic configures the default wildcard argument based on the scala version and scalac options
       // In the following scenarios we use "?" instead of "_"
@@ -423,6 +428,7 @@ object Smithy4sCodegenPlugin extends AutoPlugin {
     val skipSet = skipResources
 
     val filePaths = inputFiles.map(_.getAbsolutePath())
+    val customOpenApiConfig = (conf / smithy4sOpenApiConfig).value.map(os.Path(_))
     val codegenArgs = CodegenArgs(
       filePaths.map(os.Path(_)).toList,
       output = os.Path(outputPath),
@@ -434,7 +440,8 @@ object Smithy4sCodegenPlugin extends AutoPlugin {
       repositories = res,
       dependencies = List.empty,
       transformers = transforms,
-      localJars = localJars
+      localJars = localJars,
+      openApiConfig = customOpenApiConfig
     )
 
     val cached =

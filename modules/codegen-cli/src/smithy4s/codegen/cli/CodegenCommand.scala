@@ -93,6 +93,13 @@ object CodegenCommand {
       .map(_.toSet)
       .orNone
 
+  val openApiConfigOpt: Opts[Option[os.Path]] =
+    Opts.option[os.Path](
+      "openapi-config",
+      "Path of file containing custom OpenAPI config to modify the OpenApi generation"
+      )
+      .orNone
+
   val options =
     (
       outputOpt,
@@ -105,11 +112,12 @@ object CodegenCommand {
       dependenciesOpt,
       transformersOpt,
       localJarsOpt,
-      specsArgs
+      specsArgs,
+      openApiConfigOpt
     )
       .mapN {
         // format: off
-        case (output, resourseOutput, skip, discoverModels, allowedNS, excludedNS, repositories, dependencies, transformers, localJars, specsArgs) =>
+        case (output, resourseOutput, skip, discoverModels, allowedNS, excludedNS, repositories, dependencies, transformers, localJars, specsArgs, openApiConfig) =>
         // format: on
           val dependenciesWithDefaults = {
             import Defaults._
@@ -126,7 +134,8 @@ object CodegenCommand {
             repositories.getOrElse(List.empty),
             dependenciesWithDefaults,
             transformers.getOrElse(List.empty),
-            localJars.getOrElse(List.empty)
+            localJars.getOrElse(List.empty),
+            openApiConfig
           )
       }
 

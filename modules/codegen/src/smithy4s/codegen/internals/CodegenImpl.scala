@@ -24,6 +24,7 @@ import smithy4s.codegen.transformers._
 import software.amazon.smithy.model.Model
 import software.amazon.smithy.model.node.Node
 import software.amazon.smithy.model.shapes.ModelSerializer
+import software.amazon.smithy.openapi.OpenApiConfig
 
 import scala.jdk.CollectionConverters._
 import software.amazon.smithy.model.transform.ModelTransformer
@@ -64,12 +65,19 @@ private[codegen] object CodegenImpl { self =>
     } else (List.empty, List.empty)
 
     val openApiFiles = if (!args.skipOpenapi) {
-      alloy.openapi.convert(model, args.allowedNS, classloader).map {
-        case OpenApiConversionResult(_, serviceId, outputString) =>
+      val openApiConfig: Unit => OpenApiConfig = _ =>
+        args.openApiConfig
+          .map(os.read)
+          .map(raw => OpenApiConfig.fromNode(Node.parseJsonWithComments(raw)))
+          .getOrElse(new OpenApiConfig())
+
+      alloy.openapi
+        .convertWithConfig(model, args.allowedNS, openApiConfig, classloader)
+        .map { case OpenApiConversionResult(_, serviceId, outputString) =>
           val name = serviceId.getNamespace() + "." + serviceId.getName()
           val openapiFile = (args.resourceOutput / (name + ".json"))
           CodegenEntry.FromMemory(openapiFile, outputString)
-      }
+        }
     } else List.empty
 
     val protoFiles = if (!args.skipProto) {
